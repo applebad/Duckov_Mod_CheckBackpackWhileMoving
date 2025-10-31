@@ -1,0 +1,10 @@
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\bin\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.deps.json
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\bin\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.dll
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\bin\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.pdb
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\obj\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.csproj.AssemblyReference.cache
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\obj\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.GeneratedMSBuildEditorConfig.editorconfig
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\obj\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.AssemblyInfoInputs.cache
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\obj\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.AssemblyInfo.cs
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\obj\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.csproj.CoreCompileInputs.cache
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\obj\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.dll
+X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\obj\Debug\netstandard2.1\DuckovCheckBackpackWhileMoving.pdb

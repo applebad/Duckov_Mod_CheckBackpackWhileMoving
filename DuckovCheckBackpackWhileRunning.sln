@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36221.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckBackpackWhileMoving", "CheckBackpackWhileMoving.csproj", "{1B09CC27-0695-45B8-B8F4-C9B852422986}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1B09CC27-0695-45B8-B8F4-C9B852422986}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B09CC27-0695-45B8-B8F4-C9B852422986}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B09CC27-0695-45B8-B8F4-C9B852422986}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B09CC27-0695-45B8-B8F4-C9B852422986}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {74289EA4-3753-4ADE-9E9C-DB52829C916D}
+	EndGlobalSection
+EndGlobal
