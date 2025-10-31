@@ -1,3 +1,0 @@
-X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\bin\Release\netstandard2.1\publish\CheckBackpackWhileMoving.dll
-X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\bin\Release\netstandard2.1\publish\CheckBackpackWhileMoving.deps.json
-X:\GOODS\DuckovMod\DuckovCheckBackpackWhileRunning\bin\Release\netstandard2.1\publish\CheckBackpackWhileMoving.pdb
