@@ -27,7 +27,6 @@ namespace CheckBackpackWhileMoving
         void OnEnable()
         {
             checkBackpackWhileMoving = new CheckBackpackWhileMoving();
-            System.Threading.Tasks.Task.Delay(1000);
             harmony = new Harmony(Id);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             ApplyKeypadBindings();
@@ -61,16 +60,15 @@ namespace CheckBackpackWhileMoving
             try
             {
                 // 实时监控关键变量
-                if (Time.frameCount % 60 == 0) // 每240帧输出一次
+                if (Time.frameCount % 60 == 0)
                 {
                     //Debug.Log($"=== 帧 {Time.frameCount} 状态监控 ===");
                     //Debug.Log($"攻击阻止: {CheckBackpackWhileMoving.disableAttack}");
                     //Debug.Log($"活动视图: {View.ActiveView?.GetType().Name ?? "无"}");
-                    // 监控玩家位置（用于距离检测）
                     var player = CharacterMainControl.Main;
-                    if (player != null)
+                    if (player == null)
                     {
-                        //Debug.Log($"玩家位置: {player.transform.position}");
+                        throw (new Exception("缺失player对象,CharacterMainControl.Main"));
                     }
                     if (CheckBackpackWhileMoving.currentLootBox != null && calDistanceIsOutOfRange(player, CheckBackpackWhileMoving.currentLootBox))
                     {
@@ -152,22 +150,18 @@ namespace CheckBackpackWhileMoving
         }
         private void ReplaceBindings(InputAction action, params string[] bindings)
         {
-            // 禁用Action
+
             action.Disable();
 
-            // 清空所有绑定
             for (int i = action.bindings.Count - 1; i >= 0; i--)
             {
                 action.ChangeBinding(i).Erase();
             }
 
-            // 添加新绑定
-            foreach (string binding in bindings)
+            foreach (var binding in bindings)
             {
                 action.AddBinding(binding);
             }
-
-            // 重新启用
             action.Enable();
         }
     }

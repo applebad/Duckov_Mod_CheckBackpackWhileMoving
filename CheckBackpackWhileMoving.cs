@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace CheckBackpackWhileMoving
 {
@@ -102,8 +101,6 @@ namespace CheckBackpackWhileMoving
             // 只阻止边界偏移计算，但允许相机其他更新
             return !CheckBackpackWhileMoving.disableAttack;
         }
-
-        // 不阻止 LateUpdate 和 UpdatePosition，这样相机仍然跟随角色
     }
 
     //屏蔽触发器
@@ -132,7 +129,7 @@ namespace CheckBackpackWhileMoving
         [HarmonyPrefix]
         static bool SetAimInputUsingMouse_Prefix(Vector2 mouseDelta)
         {
-            // 当背包打开时，阻止鼠标输入处理
+            // 当背包打开时，阻止鼠标瞄准输入处理
             if (CheckBackpackWhileMoving.disableAttack)
             {
                 return false; // 跳过原方法
@@ -163,19 +160,18 @@ namespace CheckBackpackWhileMoving
             try
             {
                 Type viewType = __instance.GetType();
-
                 if (!viewHasTabsCache.TryGetValue(viewType, out bool hasTabs))
                 {
                     var viewTabs = viewTabsField?.GetValue(__instance);
                     hasTabs = viewTabs != null;
                     viewHasTabsCache[viewType] = hasTabs;
                 }
-
-                if (hasTabs)
+                if (!hasTabs)
                 {
-                    CheckBackpackWhileMoving.disableAttack = true;
-                    InputManager.ActiveInput(__instance.gameObject);
+                    return;
                 }
+                CheckBackpackWhileMoving.disableAttack = true;
+                InputManager.ActiveInput(__instance.gameObject);
             }
             catch (Exception ex)
             {
@@ -183,90 +179,6 @@ namespace CheckBackpackWhileMoving
                 Debug.LogError("Error at mod:CheckBackpackWhileMoving");
             }
         }
-        ////不懂IL代码，使用AI
-        //[HarmonyPatch("OnOpen")]
-        //static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
-        //{
-        //    var codes = new List<CodeInstruction>(instructions);
-
-        //    // 查找 InputManager.DisableInput 调用的位置
-        //    int disableInputIndex = -1;
-        //    for (int i = 0; i < codes.Count; i++)
-        //    {
-        //        if (codes[i].opcode == OpCodes.Call &&
-        //            codes[i].operand is MethodInfo method &&
-        //            method.Name == "DisableInput" &&
-        //            method.DeclaringType == typeof(InputManager))
-        //        {
-        //            disableInputIndex = i;
-        //            break;
-        //        }
-        //    }
-
-        //    if (disableInputIndex == -1)
-        //    {
-        //        Debug.LogWarning("⚠️ 未找到 InputManager.DisableInput 调用");
-        //        return instructions;
-        //    }
-
-        //    // 创建标签
-        //    Label skipDisableInputLabel = generator.DefineLabel();
-        //    Label continueLabel = generator.DefineLabel();
-
-        //    var newCodes = new List<CodeInstruction>();
-
-        //    // 复制所有代码直到 DisableInput 的参数之前
-        //    for (int i = 0; i < disableInputIndex - 1; i++)
-        //    {
-        //        newCodes.Add(codes[i]);
-        //    }
-
-        //    // 此时栈上应该有 base.gameObject（DisableInput 的参数）
-        //    // 我们需要保存这个参数，因为条件检查可能会改变栈
-
-        //    // 保存 gameObject 参数到本地变量
-        //    LocalBuilder gameObjectVar = generator.DeclareLocal(typeof(GameObject));
-        //    newCodes.Add(new CodeInstruction(OpCodes.Stloc, gameObjectVar));
-
-        //    // 检查条件：viewTabs != null
-        //    newCodes.Add(new CodeInstruction(OpCodes.Ldarg_0)); // 加载 this
-        //    newCodes.Add(new CodeInstruction(OpCodes.Ldfld, viewTabsField)); // 加载 viewTabs 字段
-        //    newCodes.Add(new CodeInstruction(OpCodes.Brfalse, continueLabel)); // 如果 viewTabs == null，跳转到继续执行 DisableInput
-
-        //    // viewTabs != null 的情况：跳过 DisableInput，设置攻击阻止
-        //    newCodes.Add(new CodeInstruction(OpCodes.Ldarg_0));
-        //    newCodes.Add(new CodeInstruction(OpCodes.Call,
-        //        AccessTools.Method(typeof(ViewPatch), "SetAttackBlockAndActiveInput")));
-        //    newCodes.Add(new CodeInstruction(OpCodes.Br, skipDisableInputLabel));
-
-        //    // viewTabs == null 的情况：执行原逻辑
-        //    newCodes.Add(new CodeInstruction(OpCodes.Ldloc, gameObjectVar) { labels = new List<Label> { continueLabel } }); // 恢复 gameObject 参数
-        //    newCodes.Add(new CodeInstruction(OpCodes.Call,
-        //        AccessTools.Method(typeof(InputManager), "DisableInput"))); // 调用 DisableInput
-
-        //    // 跳过标签
-        //    newCodes.Add(new CodeInstruction(OpCodes.Nop) { labels = new List<Label> { skipDisableInputLabel } });
-
-        //    // 复制剩余的所有代码
-        //    for (int i = disableInputIndex + 1; i < codes.Count; i++)
-        //    {
-        //        newCodes.Add(codes[i]);
-        //    }
-        //    return newCodes;
-        //}
-
-        //public static void SetAttackBlockAndActiveInput(View instance)
-        //{
-        //    try
-        //    {
-        //        CheckBackpackWhileMoving.disableAttack = true;
-        //        InputManager.ActiveInput(instance.gameObject);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Debug.LogError($"设置攻击阻止失败: {ex.Message}");
-        //    }
-        //}
 
         [HarmonyPatch("OnClose")]
         [HarmonyPostfix]
