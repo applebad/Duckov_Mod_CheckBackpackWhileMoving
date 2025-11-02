@@ -15,7 +15,7 @@ namespace CheckBackpackWhileMoving
         private const string Id = "yhpm4.CheckBackpackWhileMoving";
         private CheckBackpackWhileMoving? checkBackpackWhileMoving { get; set; }
         private Harmony? harmony;
-
+        private bool IsInGame;
         void OnAwake()
         {
             Debug.Log("CheckBackpackWhileMoving Loaded");
@@ -26,31 +26,44 @@ namespace CheckBackpackWhileMoving
         }
         void OnEnable()
         {
-            checkBackpackWhileMoving = new CheckBackpackWhileMoving();
-            harmony = new Harmony(Id);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
-            ApplyKeypadBindings();
+            this.IsInGame = false;
+            SceneLoader.onStartedLoadingScene += this.OnSceneLoadStarted;
+            this.checkBackpackWhileMoving = new CheckBackpackWhileMoving();
+            bool isInGame = this.IsInGame;
+            if (isInGame)
+            {
+                this.ApplyMyPatches();
+            }
         }
 
         void OnDisable()
         {
             try
             {
-                if (harmony != null)
+                this.IsInGame = false;
+                SceneLoader.onStartedLoadingScene -= this.OnSceneLoadStarted;
+                if (this.harmony != null)
                 {
-                    harmony.UnpatchAll(Id);
-                    harmony = null;
+                    this.harmony.UnpatchAll("yhpm4.CheckBackpackWhileMoving");
+                    this.harmony = null;
                 }
-                CheckBackpackWhileMoving.disableAttack = false;
+                if (this.checkBackpackWhileMoving != null)
+                {
+                    CheckBackpackWhileMoving.disableAttack = false;
+                    CheckBackpackWhileMoving checkBackpackWhileMoving = this.checkBackpackWhileMoving;
+                    if (checkBackpackWhileMoving != null)
+                    {
+                        checkBackpackWhileMoving.ClearCurrentLootBox();
+                    }
+                }
                 ViewPatch.ClearViewHasTabsCache();
-                checkBackpackWhileMoving?.ClearCurrentLootBox();
-                InputManager.ActiveInput(View.ActiveView?.gameObject);
-
-                checkBackpackWhileMoving = null;
+                View activeView = View.ActiveView;
+                InputManager.ActiveInput((activeView != null) ? activeView.gameObject : null);
+                this.checkBackpackWhileMoving = null;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Harmony] 在补丁中出错: {ex.Message}");
+                Debug.LogError("[Harmony] 在补丁中出错: " + ex.Message);
                 Debug.LogError("Error at mod:CheckBackpackWhileMoving");
             }
         }
@@ -59,28 +72,32 @@ namespace CheckBackpackWhileMoving
         {
             try
             {
-                // 实时监控关键变量
-                if (Time.frameCount % 60 == 0)
+                bool disableAttack = CheckBackpackWhileMoving.disableAttack;
+                if (disableAttack)
                 {
-                    //Debug.Log($"=== 帧 {Time.frameCount} 状态监控 ===");
-                    //Debug.Log($"攻击阻止: {CheckBackpackWhileMoving.disableAttack}");
-                    //Debug.Log($"活动视图: {View.ActiveView?.GetType().Name ?? "无"}");
-                    var player = CharacterMainControl.Main;
-                    if (player == null)
+                    bool flag = Time.frameCount % 60 == 0;
+                    if (flag)
                     {
-                        throw (new Exception("缺失player对象,CharacterMainControl.Main"));
-                    }
-                    if (CheckBackpackWhileMoving.currentLootBox != null && calDistanceIsOutOfRange(player, CheckBackpackWhileMoving.currentLootBox))
-                    {
-                        ForceCloseView();
-                        checkBackpackWhileMoving?.ClearCurrentLootBox();
+                        CharacterMainControl main = CharacterMainControl.Main;
+                        bool flag2 = main == null;
+                        if (!flag2)
+                        {
+                            bool flag3 = CheckBackpackWhileMoving.currentLootBox != null && this.calDistanceIsOutOfRange(main, CheckBackpackWhileMoving.currentLootBox);
+                            if (flag3)
+                            {
+                                this.ForceCloseView();
+                                CheckBackpackWhileMoving checkBackpackWhileMoving = this.checkBackpackWhileMoving;
+                                if (checkBackpackWhileMoving != null)
+                                {
+                                    checkBackpackWhileMoving.ClearCurrentLootBox();
+                                }
+                            }
+                        }
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                Debug.LogError($"[Harmony] 在补丁中出错: {ex.Message}");
-                Debug.LogError("Error at mod:CheckBackpackWhileMoving");
             }
         }
         bool calDistanceIsOutOfRange(CharacterMainControl player, GameObject lootBox)
@@ -98,6 +115,33 @@ namespace CheckBackpackWhileMoving
             return false;
         }
 
+        private bool ApplyMyPatches()
+        {
+            this.harmony = new Harmony("yhpm4.CheckBackpackWhileMoving");
+            this.harmony.PatchAll(Assembly.GetExecutingAssembly());
+            this.ApplyKeypadBindings(true);
+            return true;
+        }
+
+        private void OnSceneLoadStarted(SceneLoadingContext context)
+        {
+            bool flag = "Base".Equals(context.sceneName);
+            if (flag)
+            {
+                this.IsInGame = false;
+                if (this.harmony != null)
+                {
+                    this.harmony.UnpatchAll("yhpm4.CheckBackpackWhileMoving");
+                    this.harmony = null;
+                }
+                this.ApplyKeypadBindings(false);
+            }
+            else
+            {
+                this.IsInGame = true;
+                this.ApplyMyPatches();
+            }
+        }
         void ForceCloseView()
         {
             if (View.ActiveView != null)
@@ -105,62 +149,80 @@ namespace CheckBackpackWhileMoving
                 View.ActiveView.Close();
             }
         }
-        private void ApplyKeypadBindings()
+        private void ApplyKeypadBindings(bool flag)
         {
             try
             {
                 if (UIInputManager.Instance == null)
                 {
-                    Debug.LogWarning("UIInputManager 尚未初始化");
                     return;
+                    //Debug.LogWarning("UIInputManager 尚未初始化");
                 }
-
-                var manager = UIInputManager.Instance;
-                var type = typeof(UIInputManager);
-
-                var nextPageField = type.GetField("inputActionNextPage",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var previousPageField = type.GetField("inputActionPreviousPage",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                if (nextPageField != null)
+                else
                 {
-                    var nextPageAction = (InputAction)nextPageField.GetValue(manager);
-                    if (nextPageAction != null)
+                    UIInputManager instance = UIInputManager.Instance;
+                    Type typeFromHandle = typeof(UIInputManager);
+                    FieldInfo field = typeFromHandle.GetField("inputActionNextPage", BindingFlags.Instance | BindingFlags.NonPublic);
+                    FieldInfo field2 = typeFromHandle.GetField("inputActionPreviousPage", BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (field != null)
                     {
-                        ReplaceBindings(nextPageAction, "<Keyboard>/downArrow", "<Keyboard>/numpad2");
-                        //Debug.Log("下一页绑定修改成功");
+                        InputAction inputAction = (InputAction)field.GetValue(instance);
+                        if (inputAction != null)
+                        {
+                            if (flag)
+                            {
+                                this.ReplaceBindings(inputAction, new string[]
+                                {
+                                    "<Keyboard>/downArrow"
+                                });
+                            }
+                            else
+                            {
+                                this.ReplaceBindings(inputAction, new string[]
+                                {
+                                    "<Keyboard>/s"
+                                });
+                            }
+                        }
                     }
-                }
-
-                if (previousPageField != null)
-                {
-                    var previousPageAction = (InputAction)previousPageField.GetValue(manager);
-                    if (previousPageAction != null)
+                    if (field2 != null)
                     {
-                        ReplaceBindings(previousPageAction, "<Keyboard>/upArrow", "<Keyboard>/numpad8");
-                        //Debug.Log("上一页绑定修改成功");
+                        InputAction inputAction2 = (InputAction)field2.GetValue(instance);
+                        if (inputAction2 != null)
+                        {
+                            if (flag)
+                            {
+                                this.ReplaceBindings(inputAction2, new string[]
+                                {
+                                    "<Keyboard>/upArrow"
+                                });
+                            }
+                            else
+                            {
+                                this.ReplaceBindings(inputAction2, new string[]
+                                {
+                                    "<Keyboard>/w"
+                                });
+                            }
+                        }
                     }
                 }
             }
-            catch (System.Exception e)
+            catch (Exception arg)
             {
-                Debug.LogError($"应用小键盘绑定失败: {e}");
+                Debug.LogError(string.Format("应用按键绑定失败: {0}", arg));
             }
         }
         private void ReplaceBindings(InputAction action, params string[] bindings)
         {
-
             action.Disable();
-
             for (int i = action.bindings.Count - 1; i >= 0; i--)
             {
                 action.ChangeBinding(i).Erase();
             }
-
-            foreach (var binding in bindings)
+            foreach (string path in bindings)
             {
-                action.AddBinding(binding);
+                action.AddBinding(path, null, null, null);
             }
             action.Enable();
         }

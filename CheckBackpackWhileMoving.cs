@@ -159,17 +159,6 @@ namespace CheckBackpackWhileMoving
         {
             try
             {
-                Type viewType = __instance.GetType();
-                if (!viewHasTabsCache.TryGetValue(viewType, out bool hasTabs))
-                {
-                    var viewTabs = viewTabsField?.GetValue(__instance);
-                    hasTabs = viewTabs != null;
-                    viewHasTabsCache[viewType] = hasTabs;
-                }
-                if (!hasTabs)
-                {
-                    return;
-                }
                 CheckBackpackWhileMoving.disableAttack = true;
                 InputManager.ActiveInput(__instance.gameObject);
             }
