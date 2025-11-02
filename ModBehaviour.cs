@@ -185,6 +185,7 @@ namespace CheckBackpackWhileMoving
                             }
                         }
                     }
+
                     if (field2 != null)
                     {
                         InputAction inputAction2 = (InputAction)field2.GetValue(instance);
