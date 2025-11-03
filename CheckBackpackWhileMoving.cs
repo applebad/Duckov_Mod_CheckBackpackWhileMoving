@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CheckBackpackWhileMoving
 {
@@ -19,6 +20,41 @@ namespace CheckBackpackWhileMoving
         {
             currentLootBox = null;
         }
+    }
+
+    [HarmonyPatch(typeof(CharacterInputControl))]
+    public class CharacterInputControlPatch
+    {
+        [HarmonyPatch("OnPlayerAdsInput")]
+        [HarmonyPrefix]
+        static bool OnPlayerAdsInput_Prefix(CharacterInputControl __instance, ref InputAction.CallbackContext context)
+        {
+            try
+            {
+                if (CheckBackpackWhileMoving.disableAttack)
+                {
+                    if (context.canceled)
+                    {
+                        FieldInfo adsField = AccessTools.Field(typeof(CharacterInputControl), "adsInput");
+                        MethodInfo methodInfo = AccessTools.Method(typeof(CharacterInputControl), "SetAdsInput");
+                        methodInfo.Invoke(__instance, new object[] { false });
+                        if (adsField != null)
+                        {
+                            adsField.SetValue(__instance, false);
+                        }
+                    }
+                    return false; // 跳过原方法
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Harmony] 在补丁中出错: {ex.Message}");
+                Debug.LogError("Error at mod:CheckBackpackWhileMoving");
+                return true;
+            }
+            return true; // 执行原方法
+        }
+
     }
 
     [HarmonyPatch(typeof(CharacterMainControl))]
@@ -39,47 +75,6 @@ namespace CheckBackpackWhileMoving
                     CheckBackpackWhileMoving.currentLootBox = __result.gameObject;
                 }
             }
-        }
-
-        [HarmonyPatch("IsAiming")]
-        [HarmonyPostfix]
-        static bool IsAiming_Prefix(bool __result)
-        {
-            try
-            {
-                if (CheckBackpackWhileMoving.disableAttack)
-                {
-                    __result = false;
-                    return false; // 跳过原方法
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[Harmony] 在补丁中出错: {ex.Message}");
-                Debug.LogError("Error at mod:CheckBackpackWhileMoving");
-                return true;
-            }
-            return true; // 执行原方法
-        }
-        [HarmonyPatch("CanControlAim")]
-        [HarmonyPostfix]
-        static bool CanControlAim_Prefix(bool __result)
-        {
-            try
-            {
-                if (CheckBackpackWhileMoving.disableAttack)
-                {
-                    __result = false;
-                    return false; // 跳过原方法
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[Harmony] 在补丁中出错: {ex.Message}");
-                Debug.LogError("Error at mod:CheckBackpackWhileMoving");
-                return true;
-            }
-            return true; // 执行原方法
         }
     }
 
