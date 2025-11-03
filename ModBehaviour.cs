@@ -13,7 +13,7 @@ namespace CheckBackpackWhileMoving
     public class ModBehaviour : Duckov.Modding.ModBehaviour
     {
         private const string Id = "yhpm4.CheckBackpackWhileMoving";
-        private CheckBackpackWhileMoving? checkBackpackWhileMoving { get; set; }
+        private CheckBackpackWhileMoving? yhpm4CheckBackpackWhileMoving { get; set; }
         private Harmony? harmony;
         private bool IsInGame;
         void OnAwake()
@@ -28,7 +28,7 @@ namespace CheckBackpackWhileMoving
         {
             this.IsInGame = false;
             SceneLoader.onStartedLoadingScene += this.OnSceneLoadStarted;
-            this.checkBackpackWhileMoving = new CheckBackpackWhileMoving();
+            this.yhpm4CheckBackpackWhileMoving = CheckBackpackWhileMoving.Instance;
             bool isInGame = this.IsInGame;
             if (isInGame)
             {
@@ -47,19 +47,18 @@ namespace CheckBackpackWhileMoving
                     this.harmony.UnpatchAll("yhpm4.CheckBackpackWhileMoving");
                     this.harmony = null;
                 }
-                if (this.checkBackpackWhileMoving != null)
+                if (this.yhpm4CheckBackpackWhileMoving != null)
                 {
-                    CheckBackpackWhileMoving.disableAttack = false;
-                    CheckBackpackWhileMoving checkBackpackWhileMoving = this.checkBackpackWhileMoving;
+                    CheckBackpackWhileMoving.Instance.disableAttack = false;
+                    CheckBackpackWhileMoving checkBackpackWhileMoving = this.yhpm4CheckBackpackWhileMoving;
                     if (checkBackpackWhileMoving != null)
                     {
                         checkBackpackWhileMoving.ClearCurrentLootBox();
                     }
                 }
-                ViewPatch.ClearViewHasTabsCache();
                 View activeView = View.ActiveView;
                 InputManager.ActiveInput((activeView != null) ? activeView.gameObject : null);
-                this.checkBackpackWhileMoving = null;
+                this.yhpm4CheckBackpackWhileMoving = null;
             }
             catch (Exception ex)
             {
@@ -72,21 +71,20 @@ namespace CheckBackpackWhileMoving
         {
             try
             {
-                bool disableAttack = CheckBackpackWhileMoving.disableAttack;
+                if (yhpm4CheckBackpackWhileMoving == null) return;
+                bool disableAttack = CheckBackpackWhileMoving.Instance.disableAttack;
                 if (disableAttack)
                 {
                     bool flag = Time.frameCount % 60 == 0;
                     if (flag)
                     {
                         CharacterMainControl main = CharacterMainControl.Main;
-                        bool flag2 = main == null;
-                        if (!flag2)
+                        if (main != null)
                         {
-                            bool flag3 = CheckBackpackWhileMoving.currentLootBox != null && this.calDistanceIsOutOfRange(main, CheckBackpackWhileMoving.currentLootBox);
-                            if (flag3)
+                            if (CheckBackpackWhileMoving.Instance.currentLootBox != null && this.calDistanceIsOutOfRange(main, CheckBackpackWhileMoving.Instance.currentLootBox))
                             {
                                 this.ForceCloseView();
-                                CheckBackpackWhileMoving checkBackpackWhileMoving = this.checkBackpackWhileMoving;
+                                CheckBackpackWhileMoving checkBackpackWhileMoving = this.yhpm4CheckBackpackWhileMoving;
                                 if (checkBackpackWhileMoving != null)
                                 {
                                     checkBackpackWhileMoving.ClearCurrentLootBox();
@@ -147,6 +145,7 @@ namespace CheckBackpackWhileMoving
             if (View.ActiveView != null)
             {
                 View.ActiveView.Close();
+                CheckBackpackWhileMoving.Instance.ClearCurrentLootBox();
             }
         }
         private void ApplyKeypadBindings(bool flag)
