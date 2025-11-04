@@ -10,16 +10,13 @@ namespace CheckBackpackWhileMoving
 {
     public class CheckBackpackWhileMoving
     {
-        public static CheckBackpackWhileMoving Instance { get; }
+        private static readonly CheckBackpackWhileMoving _instance = new CheckBackpackWhileMoving();
+        public static CheckBackpackWhileMoving Instance => _instance;
         public bool disableAttack { get; set; }
         public bool IsMerchant { get; set; }
         public GameObject? currentLootBox { get; set; }
         public List<String> interactObjectNames { get; set; }
         public InputActionAsset actions { get; }
-        static CheckBackpackWhileMoving()
-        {
-            Instance = new CheckBackpackWhileMoving();
-        }
         private CheckBackpackWhileMoving()
         {
             actions = GameManager.MainPlayerInput.actions;

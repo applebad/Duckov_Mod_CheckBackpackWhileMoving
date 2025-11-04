@@ -49,12 +49,8 @@ namespace CheckBackpackWhileMoving
                 }
                 if (this.yhpm4CheckBackpackWhileMoving != null)
                 {
-                    CheckBackpackWhileMoving.Instance.disableAttack = false;
-                    CheckBackpackWhileMoving checkBackpackWhileMoving = this.yhpm4CheckBackpackWhileMoving;
-                    if (checkBackpackWhileMoving != null)
-                    {
-                        checkBackpackWhileMoving.ClearCurrentLootBox();
-                    }
+                    yhpm4CheckBackpackWhileMoving.disableAttack = false;
+                    yhpm4CheckBackpackWhileMoving.ClearCurrentLootBox();
                 }
                 View activeView = View.ActiveView;
                 InputManager.ActiveInput((activeView != null) ? activeView.gameObject : null);
@@ -72,7 +68,7 @@ namespace CheckBackpackWhileMoving
             try
             {
                 if (yhpm4CheckBackpackWhileMoving == null) return;
-                bool disableAttack = CheckBackpackWhileMoving.Instance.disableAttack;
+                bool disableAttack = yhpm4CheckBackpackWhileMoving.disableAttack;
                 if (disableAttack)
                 {
                     bool flag = Time.frameCount % 60 == 0;
@@ -81,13 +77,12 @@ namespace CheckBackpackWhileMoving
                         CharacterMainControl main = CharacterMainControl.Main;
                         if (main != null)
                         {
-                            if (CheckBackpackWhileMoving.Instance.currentLootBox != null && this.calDistanceIsOutOfRange(main, CheckBackpackWhileMoving.Instance.currentLootBox))
+                            if (yhpm4CheckBackpackWhileMoving.currentLootBox != null && this.calDistanceIsOutOfRange(main, yhpm4CheckBackpackWhileMoving.currentLootBox))
                             {
                                 this.ForceCloseView();
-                                CheckBackpackWhileMoving checkBackpackWhileMoving = this.yhpm4CheckBackpackWhileMoving;
-                                if (checkBackpackWhileMoving != null)
+                                if (yhpm4CheckBackpackWhileMoving != null)
                                 {
-                                    checkBackpackWhileMoving.ClearCurrentLootBox();
+                                    yhpm4CheckBackpackWhileMoving.ClearCurrentLootBox();
                                 }
                             }
                         }
@@ -104,7 +99,7 @@ namespace CheckBackpackWhileMoving
             {
                 float distance = Vector3.Distance(player.transform.position, lootBox.transform.position);
                 //Debug.Log($"玩家与战利品箱距离: {distance}");
-                if (distance > 2.0f) // 假设5.0f是关闭背包的距离阈值
+                if (distance > 2.0f)//可根据需要调整距离阈值
                 {
                     //Debug.Log("距离过远，强制关闭背包视图");
                     return true;
