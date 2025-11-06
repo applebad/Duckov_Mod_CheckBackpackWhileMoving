@@ -12,8 +12,8 @@ namespace CheckBackpackWhileMoving
     {
         private static readonly CheckBackpackWhileMoving _instance = new CheckBackpackWhileMoving();
         public static CheckBackpackWhileMoving Instance => _instance;
-        public bool disableAttack { get; set; }
-        public bool IsMerchant { get; set; }
+        public bool disableAttack, hasShoulderSurfing, IsInGame;//局内状态
+        public bool DisableInteract { get; set; }
         public GameObject? currentLootBox { get; set; }
         public List<String> interactObjectNames { get; set; }
         public InputActionAsset actions { get; }
@@ -21,10 +21,16 @@ namespace CheckBackpackWhileMoving
         {
             actions = GameManager.MainPlayerInput.actions;
             disableAttack = false;
-            IsMerchant = false;
+            IsInGame = false;
+            DisableInteract = false;
             interactObjectNames = new List<String>();
-            interactObjectNames.Add("LootBox");
-            interactObjectNames.Add("Merchant");
+            interactObjectNames.Add("LootBoxLoader");
+            interactObjectNames.Add("Inventory");
+        }
+        public void initStatus() {
+            disableAttack = false;
+            IsInGame = false;
+            DisableInteract = false;
         }
         public void ClearCurrentLootBox()
         {
@@ -32,29 +38,62 @@ namespace CheckBackpackWhileMoving
         }
     }
 
+    // 第三人称mod兼容
+    [HarmonyPatch]
+    static class ShoulderCameraPatch
+    {
+        private static MethodBase _cachedMethod;
+        private static bool _hasChecked = false;
+        private static bool _shouldPatch = false;
+
+        static ShoulderCameraPatch()
+        {
+            // 在静态构造函数中预先检查并缓存结果
+            if (!CheckBackpackWhileMoving.Instance.hasShoulderSurfing)
+            {
+                _shouldPatch = false;
+                _hasChecked = true;
+                return;
+            }
+            try
+            {
+                Type shoulderCameraType = AccessTools.TypeByName("ShoulderSurfing.ShoulderCamera");
+                if (shoulderCameraType != null)
+                {
+                    _cachedMethod = AccessTools.Method(shoulderCameraType, "LateUpdate");
+                    _shouldPatch = _cachedMethod != null;
+                }
+                else
+                {
+                    _shouldPatch = false;
+                }
+            }
+            catch
+            {
+                _shouldPatch = false;
+            }
+            _hasChecked = true;
+        }
+
+        static bool Prepare()
+        {
+            // 直接返回缓存的结果
+            return _hasChecked && _shouldPatch;
+        }
+
+        static MethodBase TargetMethod()
+        {
+            // 直接返回缓存的方法
+            return _cachedMethod;
+        }
+
+        [HarmonyPrefix]
+        static bool Prefix() => !CheckBackpackWhileMoving.Instance.disableAttack;
+    }
+
     [HarmonyPatch(typeof(CharacterInputControl))]
     public class CharacterInputControlPatch
     {
-        //交互相关
-        [HarmonyPatch("OnInteractInput")]
-        [HarmonyPrefix]
-        static bool OnInteractInput_Prefix(CharacterInputControl __instance, InputAction.CallbackContext context)
-        {
-            try
-            {
-                // 当是商人模式且背包打开时，阻止交互输入
-                if (CheckBackpackWhileMoving.Instance.IsMerchant && CheckBackpackWhileMoving.Instance.disableAttack)
-                {
-                    return false; // 跳过原方法
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError("Error at mod:CheckBackpackWhileMoving");
-                Debug.LogError($"[Harmony] 在补丁中出错: {ex.Message}");
-            }
-            return true; // 执行原方法
-        }
         //瞄准相关
         [HarmonyPatch("OnPlayerAdsInput")]
         [HarmonyPrefix]
@@ -79,13 +118,29 @@ namespace CheckBackpackWhileMoving
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Harmony] 在补丁中出错: {ex.Message}");
-                Debug.LogError("Error at mod:CheckBackpackWhileMoving");
+                //Debug.LogError($"[Harmony] 在补丁中出错: {ex.Message}");
+                //Debug.LogError("Error at mod:CheckBackpackWhileMoving");
                 return true;
             }
             return true; // 执行原方法
         }
 
+        //取消动作
+        [HarmonyPatch("OnPlayerStopAction")]
+        [HarmonyPrefix]
+        static bool OnPlayerStopAction_Prefix(InputAction.CallbackContext context)
+        {
+            if (CheckBackpackWhileMoving.Instance.IsInGame && context.started)
+            {
+                CheckBackpackWhileMoving.Instance.DisableInteract = false;
+                CheckBackpackWhileMoving.Instance.ClearCurrentLootBox();
+                if (CheckBackpackWhileMoving.Instance.disableAttack)
+                {
+                    return false; // 跳过原方法
+                }
+            }
+            return true; // 执行原方法
+        }
     }
 
     [HarmonyPatch(typeof(CharacterMainControl))]
@@ -93,27 +148,67 @@ namespace CheckBackpackWhileMoving
     {
         [HarmonyPatch("GetInteractableTargetToInteract")]
         [HarmonyPostfix]
-        static void GetInteractableTargetToInteract(InteractableBase __result)
+        static void GetInteractableTargetToInteract(ref InteractableBase __result)
         {
+            if(!CheckBackpackWhileMoving.Instance.IsInGame) return;
             if (__result != null && __result.gameObject != null)
             {
-
-                string targetName = __result.gameObject.name;
-                //Debug.Log("获取到的可交互目标"+ targetName);//包含LootBox为战利品箱或搜索箱
-                if (targetName != null)
+                GameObject target = __result.gameObject;
+                if (target != null)
                 {
-                    foreach (String name in CheckBackpackWhileMoving.Instance.interactObjectNames)
+                    //交互对象如果和当前的对象相同，则禁止本次交互
+                    if (CheckBackpackWhileMoving.Instance.currentLootBox != null)
                     {
-                        if (targetName.Contains(name))
+                        if (__result.gameObject == CheckBackpackWhileMoving.Instance.currentLootBox)
+                        {
+                            //Debug.Log("判断是否相等:" + (__result.gameObject == CheckBackpackWhileMoving.Instance.currentLootBox));
+                            CheckBackpackWhileMoving.Instance.DisableInteract = true;
+                        }
+                        else CheckBackpackWhileMoving.Instance.DisableInteract = false;
+
+                    }
+                    else CheckBackpackWhileMoving.Instance.DisableInteract = false;
+                    //当前交互对象为 空 或者为 新的对象 ，可以交互
+                    if (!CheckBackpackWhileMoving.Instance.DisableInteract)
+                    {   //判断交互类型
+                        //Debug.Log("检测到新的交互对象:" + target.name);
+                        //Debug.Log("检测到新的交互对象:" + __result.gameObject.ToString());
+                        //商人的组件名比较特别
+                        if (target.name.Contains("Merchant"))
                         {
                             CheckBackpackWhileMoving.Instance.currentLootBox = __result.gameObject;
-                            CheckBackpackWhileMoving.Instance.disableAttack = true;
+                        }
+                        else
+                        {
+                            //LootBoxLoader Inventory 
+                            Component[] allComponents = __result.gameObject.GetComponents<Component>();
+                            bool flag = false;
+                            foreach (Component comp in allComponents)
+                            {
+                                if (comp != null && !flag)
+                                {
+                                    //Debug.Log($"组件类型: {comp.GetType().Name}");
+                                    foreach (String name in CheckBackpackWhileMoving.Instance.interactObjectNames)
+                                    {
+                                        if (comp.GetType().Name.Contains(name))
+                                        {
+                                            CheckBackpackWhileMoving.Instance.currentLootBox = __result.gameObject;
+                                            flag = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                    if (targetName.Contains("Merchant"))
-                    {
-                        CheckBackpackWhileMoving.Instance.IsMerchant = true;
-                    }
+                }
+                //Debug.Log("获取到的可交互目标:" + targetName);//包含LootBox为战利品箱或搜索箱
+                //Debug.Log("当前交互对象:" + CheckBackpackWhileMoving.Instance.currentLootBox);
+                //Debug.Log("禁用开火状态:" + CheckBackpackWhileMoving.Instance.disableAttack);
+                //Debug.Log("禁止交互状态:" + CheckBackpackWhileMoving.Instance.DisableInteract);
+                if (CheckBackpackWhileMoving.Instance.DisableInteract)
+                {
+                    __result = null; //禁止交互
                 }
             }
         }
@@ -126,7 +221,6 @@ namespace CheckBackpackWhileMoving
         [HarmonyPrefix]
         static bool UpdateAimOffsetNormal_Prefix()
         {
-            // 只阻止鼠标偏移计算，但允许相机其他更新
             return !CheckBackpackWhileMoving.Instance.disableAttack;
         }
 
@@ -134,7 +228,6 @@ namespace CheckBackpackWhileMoving
         [HarmonyPrefix]
         static bool UpdateAimOffsetUsingBound_Prefix()
         {
-            // 只阻止边界偏移计算，但允许相机其他更新
             return !CheckBackpackWhileMoving.Instance.disableAttack;
         }
     }
@@ -166,14 +259,13 @@ namespace CheckBackpackWhileMoving
         static bool SetAimInputUsingMouse_Prefix(Vector2 mouseDelta)
         {
             // 当背包打开时，阻止鼠标瞄准输入处理
-            if (CheckBackpackWhileMoving.Instance.disableAttack)
+            if (CheckBackpackWhileMoving.Instance.disableAttack && CheckBackpackWhileMoving.Instance.IsInGame)
             {
                 return false; // 跳过原方法
             }
             return true; // 执行原方法
         }
     }
-
 
     [HarmonyPatch(typeof(View))]
     public class ViewPatch
@@ -185,8 +277,11 @@ namespace CheckBackpackWhileMoving
         {
             try
             {
-                CheckBackpackWhileMoving.Instance.disableAttack = true;
-                InputManager.ActiveInput(__instance.gameObject);
+                if (CheckBackpackWhileMoving.Instance.IsInGame)
+                {
+                    CheckBackpackWhileMoving.Instance.disableAttack = true;
+                    InputManager.ActiveInput(__instance.gameObject); 
+                }
             }
             catch (Exception ex)
             {
@@ -199,10 +294,12 @@ namespace CheckBackpackWhileMoving
         [HarmonyPostfix]
         public static void OnClose_Postfix()
         {
-            CheckBackpackWhileMoving.Instance.disableAttack = false;
-            CheckBackpackWhileMoving.Instance.IsMerchant = false;
-            CheckBackpackWhileMoving.Instance.ClearCurrentLootBox();
-            Debug.Log("[Merchant] Merchant mode deactivated");
+            if (CheckBackpackWhileMoving.Instance.IsInGame)
+            {
+                CheckBackpackWhileMoving.Instance.disableAttack = false;
+                CheckBackpackWhileMoving.Instance.ClearCurrentLootBox(); 
+            }
+            //Debug.Log("[Merchant] Merchant mode deactivated");
         }
     }
 }

@@ -1,6 +1,8 @@
-﻿using Duckov.UI;
+﻿using Duckov.Modding;
+using Duckov.UI;
 using HarmonyLib;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -15,7 +17,7 @@ namespace CheckBackpackWhileMoving
         private const string Id = "yhpm4.CheckBackpackWhileMoving";
         private CheckBackpackWhileMoving? yhpm4CheckBackpackWhileMoving { get; set; }
         private Harmony? harmony;
-        private bool IsInGame;
+        private bool IsInGame, hasShoulderSurfing;
         void OnAwake()
         {
             Debug.Log("CheckBackpackWhileMoving Loaded");
@@ -29,11 +31,8 @@ namespace CheckBackpackWhileMoving
             this.IsInGame = false;
             SceneLoader.onStartedLoadingScene += this.OnSceneLoadStarted;
             this.yhpm4CheckBackpackWhileMoving = CheckBackpackWhileMoving.Instance;
-            bool isInGame = this.IsInGame;
-            if (isInGame)
-            {
-                this.ApplyMyPatches();
-            }
+            this.ApplyMyPatches();
+            
         }
 
         void OnDisable()
@@ -41,10 +40,11 @@ namespace CheckBackpackWhileMoving
             try
             {
                 this.IsInGame = false;
+                CheckBackpackWhileMoving.Instance.IsInGame = this.IsInGame;
                 SceneLoader.onStartedLoadingScene -= this.OnSceneLoadStarted;
                 if (this.harmony != null)
                 {
-                    this.harmony.UnpatchAll("yhpm4.CheckBackpackWhileMoving");
+                    this.harmony.UnpatchAll(Id);
                     this.harmony = null;
                 }
                 if (this.yhpm4CheckBackpackWhileMoving != null)
@@ -53,7 +53,7 @@ namespace CheckBackpackWhileMoving
                     yhpm4CheckBackpackWhileMoving.ClearCurrentLootBox();
                 }
                 View activeView = View.ActiveView;
-                InputManager.ActiveInput((activeView != null) ? activeView.gameObject : null);
+                //InputManager.ActiveInput((activeView != null) ? activeView.gameObject : null);
                 this.yhpm4CheckBackpackWhileMoving = null;
             }
             catch (Exception ex)
@@ -101,7 +101,6 @@ namespace CheckBackpackWhileMoving
                 //Debug.Log($"玩家与战利品箱距离: {distance}");
                 if (distance > 2.0f)//可根据需要调整距离阈值
                 {
-                    //Debug.Log("距离过远，强制关闭背包视图");
                     return true;
                 }
             }
@@ -110,21 +109,28 @@ namespace CheckBackpackWhileMoving
 
         private bool ApplyMyPatches()
         {
-            this.harmony = new Harmony("yhpm4.CheckBackpackWhileMoving");
+            //环境检测：检测是否安装了第三人称mod ShoulderSurfing
+            List<ModInfo> modlist = ModManager.modInfos;
+            bool hasShoulderSurfing = modlist.Exists(mod => mod.name == "ShoulderSurfing");
+            CheckBackpackWhileMoving.Instance.hasShoulderSurfing = hasShoulderSurfing;
+
+            this.harmony = new Harmony(Id);
             this.harmony.PatchAll(Assembly.GetExecutingAssembly());
-            this.ApplyKeypadBindings(true);
+            this.ApplyKeypadBindings(this.IsInGame);
             return true;
         }
 
         private void OnSceneLoadStarted(SceneLoadingContext context)
         {
+            CheckBackpackWhileMoving.Instance.initStatus();
             bool flag = "Base".Equals(context.sceneName);
             if (flag)
             {
                 this.IsInGame = false;
+                CheckBackpackWhileMoving.Instance.IsInGame = this.IsInGame;
                 if (this.harmony != null)
                 {
-                    this.harmony.UnpatchAll("yhpm4.CheckBackpackWhileMoving");
+                    this.harmony.UnpatchAll(Id);
                     this.harmony = null;
                 }
                 this.ApplyKeypadBindings(false);
@@ -132,6 +138,7 @@ namespace CheckBackpackWhileMoving
             else
             {
                 this.IsInGame = true;
+                CheckBackpackWhileMoving.Instance.IsInGame = true;
                 this.ApplyMyPatches();
             }
         }

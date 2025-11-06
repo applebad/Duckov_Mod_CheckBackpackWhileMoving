@@ -10,8 +10,9 @@
 	
 	<ItemGroup>
 		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\TeamSoda.*" />
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\ItemStatsSystem.dll"/>
+		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\ItemStatsSystem.dll" />
 		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\Unity*" />
+		<None Remove="LICENSE" />
 		<PackageReference Include="Lib.Harmony" Version="2.4.1" />
 	</ItemGroup>
 </Project>
