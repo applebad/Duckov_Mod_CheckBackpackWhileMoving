@@ -202,7 +202,7 @@ namespace CheckBackpackWhileMoving
                         }
                     }
                 }
-                //Debug.Log("获取到的可交互目标:" + targetName);//包含LootBox为战利品箱或搜索箱
+                //Debug.Log("获取到的可交互目标:" + target?.name);//包含LootBox为战利品箱或搜索箱
                 //Debug.Log("当前交互对象:" + CheckBackpackWhileMoving.Instance.currentLootBox);
                 //Debug.Log("禁用开火状态:" + CheckBackpackWhileMoving.Instance.disableAttack);
                 //Debug.Log("禁止交互状态:" + CheckBackpackWhileMoving.Instance.DisableInteract);

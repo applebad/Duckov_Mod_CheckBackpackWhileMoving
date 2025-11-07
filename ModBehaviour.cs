@@ -122,24 +122,27 @@ namespace CheckBackpackWhileMoving
 
         private void OnSceneLoadStarted(SceneLoadingContext context)
         {
-            CheckBackpackWhileMoving.Instance.initStatus();
-            bool flag = "Base".Equals(context.sceneName);
-            if (flag)
+            try
             {
-                this.IsInGame = false;
-                CheckBackpackWhileMoving.Instance.IsInGame = this.IsInGame;
-                if (this.harmony != null)
+                //Debug.Log($"CheckBackpackWhileMoving检测到场景加载: {context.sceneName}");
+                CheckBackpackWhileMoving.Instance.initStatus();
+                bool flag = "Base".Equals(context.sceneName);
+                if (!flag)
                 {
-                    this.harmony.UnpatchAll(Id);
-                    this.harmony = null;
+                    this.IsInGame = true;
+                    CheckBackpackWhileMoving.Instance.IsInGame = this.IsInGame;
+                    this.ApplyKeypadBindings(this.IsInGame);
                 }
-                this.ApplyKeypadBindings(false);
+                else
+                {
+                    this.IsInGame = false;
+                    CheckBackpackWhileMoving.Instance.IsInGame = this.IsInGame;
+                    this.ApplyKeypadBindings(false);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                this.IsInGame = true;
-                CheckBackpackWhileMoving.Instance.IsInGame = true;
-                this.ApplyMyPatches();
+                Debug.Log("[CheckBackpackWhileMoving] OnSceneLoadStarted error:"+ex.Message);
             }
         }
         void ForceCloseView()
