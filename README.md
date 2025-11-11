@@ -1,7 +1,7 @@
 # Duckov_Mod_CheckBackpackWhileMoving | 鸭科夫Mod
 这是一个游戏 逃离鸭科夫 的简单的小Mod 他将允许玩家在移动中查看自己的背包，这在原版是不被允许的。
 
-##使用方法
+## 使用方法
 1.Steam创意工坊订阅
 
 2.放如游戏目录Escape from Duckov\Duckov_Data\Mods后，在游戏内勾选启用即可
