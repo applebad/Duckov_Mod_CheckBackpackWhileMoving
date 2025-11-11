@@ -154,6 +154,8 @@ namespace CheckBackpackWhileMoving
             if (__result != null && __result.gameObject != null)
             {
                 GameObject target = __result.gameObject;
+                //Debug.Log("检测到新的交互对象:" + target.name);
+                //Debug.Log("检测到新的交互对象:" + __result.gameObject.ToString());
                 if (target != null)
                 {
                     //交互对象如果和当前的对象相同，则禁止本次交互
@@ -171,10 +173,8 @@ namespace CheckBackpackWhileMoving
                     //当前交互对象为 空 或者为 新的对象 ，可以交互
                     if (!CheckBackpackWhileMoving.Instance.DisableInteract)
                     {   //判断交互类型
-                        //Debug.Log("检测到新的交互对象:" + target.name);
-                        //Debug.Log("检测到新的交互对象:" + __result.gameObject.ToString());
                         //商人的组件名比较特别
-                        if (target.name.Contains("Merchant"))
+                        if (target.name.Contains("Merchant") || target.name.Contains("Shop"))
                         {
                             CheckBackpackWhileMoving.Instance.currentLootBox = __result.gameObject;
                         }

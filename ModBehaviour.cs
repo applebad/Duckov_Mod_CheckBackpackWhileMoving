@@ -99,7 +99,7 @@ namespace CheckBackpackWhileMoving
             {
                 float distance = Vector3.Distance(player.transform.position, lootBox.transform.position);
                 //Debug.Log($"玩家与战利品箱距离: {distance}");
-                if (distance > 2.0f)//可根据需要调整距离阈值
+                if (distance > 2.2f)//可根据需要调整距离阈值
                 {
                     return true;
                 }
